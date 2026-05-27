@@ -372,6 +372,23 @@ class SluggersSim:
             "strength": round(strength, 6),
         }
 
+    def obstacle_reading(self, obstacle: Obstacle, idx: int) -> dict[str, Any]:
+        p = self.state.robot
+        dx = obstacle.x - p.x
+        dy = obstacle.y - p.y
+        rel_x, rel_y = rotate(dx, dy, -p.theta)
+        reading = self.ir_reading((obstacle.x, obstacle.y), obstacle.freq)
+        reading.update(
+            {
+                "id": f"obstacle_{idx}",
+                "x_in": round(obstacle.x, 2),
+                "y_in": round(obstacle.y, 2),
+                "rel_x_in": round(rel_x, 2),
+                "rel_y_in": round(rel_y, 2),
+            }
+        )
+        return reading
+
     def collision_info(self) -> tuple[bool, str]:
         p = self.state.robot
         body_radius = max(ROBOT_L, ROBOT_W) / 2.0
@@ -379,6 +396,39 @@ class SluggersSim:
             if rect_contains(expanded_rect(obstacle.rect, body_radius), p.x, p.y):
                 return True, f"obstacle_{i}"
         return False, "none"
+
+    def resolve_obstacle_collisions(self) -> tuple[bool, str]:
+        p = self.state.robot
+        body_radius = max(ROBOT_L, ROBOT_W) / 2.0
+        collided = False
+        collision_with = "none"
+
+        for _ in range(len(self.state.obstacles)):
+            moved = False
+            for i, obstacle in enumerate(self.state.obstacles, start=1):
+                x1, y1, x2, y2 = expanded_rect(obstacle.rect, body_radius)
+                if not rect_contains((x1, y1, x2, y2), p.x, p.y):
+                    continue
+
+                # Treat the robot as a conservative circular body and push its
+                # center to the nearest obstacle boundary so it cannot tunnel
+                # through raised blocks.
+                pushes = (
+                    (abs(p.x - x1), x1 - p.x, 0.0),
+                    (abs(x2 - p.x), x2 - p.x, 0.0),
+                    (abs(p.y - y1), 0.0, y1 - p.y),
+                    (abs(y2 - p.y), 0.0, y2 - p.y),
+                )
+                _distance, push_x, push_y = min(pushes, key=lambda item: item[0])
+                p.x += push_x
+                p.y += push_y
+                collided = True
+                collision_with = f"obstacle_{i}"
+                moved = True
+            if not moved:
+                break
+
+        return collided, collision_with
 
     def bump_readings(self, collision: bool, collision_with: str) -> dict[str, Any]:
         readings = {"any": collision, "front": False, "rear": False, "left": False, "right": False, "with": collision_with}
@@ -430,7 +480,7 @@ class SluggersSim:
         collision, collision_with = self.collision_info()
         bump = self.bump_readings(collision, collision_with)
         target_ir = self.ir_reading((self.state.target.x, self.state.target.y), TARGET_BEACON_FREQ)
-        obstacle_irs = [self.ir_reading((o.x, o.y), o.freq) for o in self.state.obstacles]
+        obstacle_irs = [self.obstacle_reading(o, i) for i, o in enumerate(self.state.obstacles, start=1)]
         obstacle_irs.sort(key=lambda item: item["range_in"])
 
         pings = {
@@ -684,7 +734,7 @@ class SluggersSim:
             p.x += v * math.cos(p.theta) * dt
             p.y += v * math.sin(p.theta) * dt
 
-        collision, collision_with = self.collision_info()
+        collision, collision_with = self.resolve_obstacle_collisions()
         if collision:
             self.state.collision_time += dt
             if self.state.collision_time > 1.0:

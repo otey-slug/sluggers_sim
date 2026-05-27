@@ -24,8 +24,35 @@ python sluggers_sim.py --controller sluggers_controller_template.py
 Run with the ES_Framework-style C adapter:
 
 ```powershell
-python es_sim_adapter/build_es_adapter.py --project-root ../ece118_finalproject
+python es_sim_adapter/build_es_adapter.py --project-root ../ECE118FinalProject
 python sluggers_sim.py --controller es_framework_controller.py
+```
+
+Run with the pygame sim (ver4) + ES controller:
+
+```powershell
+python sluggers_sim-ver4.py --controller es_framework_controller.py --controller-format compat
+```
+
+### Build prerequisites (Windows)
+
+The ES adapter is a native shared library (`.dll` on Windows), so you need a C
+compiler installed.
+
+Any of these options work:
+
+- **LLVM clang** (recommended): install LLVM for Windows and ensure `clang.exe`
+    is on your `PATH`.
+- **MSYS2 mingw-w64 gcc**: install MSYS2, then install a mingw toolchain and
+    ensure `gcc.exe` is on your `PATH`.
+- **Visual Studio Build Tools**: open a *Developer Command Prompt* so `cl.exe`
+    is on your `PATH` (the build script supports MSVC when `cl.exe` is available).
+
+Once a compiler is available, you can also build by pointing at an MPLAB
+generated `.hex` file (the build script uses it to infer `project-root`):
+
+```powershell
+python es_sim_adapter/build_es_adapter.py --hex path\\to\\your.production.hex
 ```
 
 Save sensor/control data when the window closes:

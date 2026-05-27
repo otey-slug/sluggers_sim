@@ -10,7 +10,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build"
-DEFAULT_PROJECT_ROOT = ROOT.parent.parent / "ece118_finalproject"
+_DEFAULT_CANDIDATES = [
+    ROOT.parent.parent / "ECE118FinalProject",  # most common in this workspace
+    ROOT.parent.parent / "ece118_finalproject",  # legacy/alternate folder name
+]
+DEFAULT_PROJECT_ROOT = next((p for p in _DEFAULT_CANDIDATES if p.is_dir()), _DEFAULT_CANDIDATES[0])
 
 
 class BuildConfig:
@@ -35,12 +39,37 @@ def library_name() -> str:
     return "libsim_robot_adapter.so"
 
 
-def find_compiler() -> str:
-    for compiler in ("gcc", "clang", "cc"):
+def find_compiler() -> tuple[str, str]:
+    """Return (kind, path).
+
+    kind is one of:
+      - "posix": gcc/clang-style CLI (gcc, clang, cc)
+      - "msvc": Microsoft cl.exe
+    """
+
+    candidates = ("gcc", "clang", "cc")
+    if platform.system() == "Windows":
+        candidates = (*candidates, "cl")
+
+    for compiler in candidates:
         found = shutil.which(compiler)
-        if found:
-            return found
-    raise RuntimeError("No C compiler found. Install gcc/clang or run from a shell with a compiler on PATH.")
+        if not found:
+            continue
+        if Path(found).name.lower() == "cl.exe":
+            return ("msvc", found)
+        return ("posix", found)
+
+    # Windows convenience: winget-installed LLVM may not be on PATH until a new
+    # shell is started. Try the common default install location.
+    if platform.system() == "Windows":
+        llvm_clang = Path("C:/Program Files/LLVM/bin/clang.exe")
+        if llvm_clang.is_file():
+            return ("posix", str(llvm_clang))
+
+    raise RuntimeError(
+        "No C compiler found. Install clang/gcc (recommended: LLVM clang or MSYS2 mingw-w64) "
+        "or run from a Visual Studio Developer Command Prompt so cl.exe is on PATH."
+    )
 
 
 def _resolve_path(path: str | Path, base: Path | None = None) -> Path:
@@ -106,14 +135,18 @@ def build(config: BuildConfig | None = None) -> Path:
     config = config or resolve_config()
     BUILD.mkdir(exist_ok=True)
     out = BUILD / library_name()
-    compiler = find_compiler()
-    sources = [
+    compiler_kind, compiler = find_compiler()
+
+    is_hsm_project = (config.project_src / "RobotHSM.c").is_file()
+
+    sources: list[Path] = [
         ROOT / "sim_robot_adapter.c",
         ROOT / "host_stubs" / "BOARD.c",
         ROOT / "host_stubs" / "AD.c",
         ROOT / "host_stubs" / "IO_Ports.c",
         ROOT / "host_stubs" / "pwm.c",
         ROOT / "host_stubs" / "serial.c",
+        ROOT / "host_stubs" / "ES_TattleTale.c",
         config.project_src / "ES_CheckEvents.c",
         config.project_src / "ES_Framework.c",
         config.project_src / "ES_KeyboardInput.c",
@@ -127,34 +160,71 @@ def build(config: BuildConfig | None = None) -> Path:
         config.project_src / "BumpDetectorService.c",
         config.project_src / "PingSensorService.c",
         config.project_src / "TrackWireService.c",
-        config.project_src / "StrategyService.c",
     ]
+
+    if is_hsm_project:
+        sources += [
+            ROOT / "host_stubs" / "Buttons.c",
+            ROOT / "host_stubs" / "LineSensors.c",
+            config.project_src / "Mecanum.c",
+            config.project_src / "RobotHSM.c",
+            config.project_src / "MatchSubHSM.c",
+            config.project_src / "NavigateToIszSubHSM.c",
+            config.project_src / "GameStageSubHSM.c",
+            config.project_src / "HandleCollisionSubHSM.c",
+            config.project_src / "AvoidBoundarySubHSM.c",
+            config.project_src / "TapeFollowController.c",
+        ]
+    else:
+        sources += [
+            config.project_src / "StrategyService.c",
+        ]
     missing_sources = [src for src in sources if not src.is_file()]
     if missing_sources:
         missing = "\n  ".join(str(src) for src in missing_sources)
         raise FileNotFoundError(f"Missing C source files:\n  {missing}")
 
-    cmd = [
-        compiler,
-        "-std=c99",
-        "-O2",
-        "-Wall",
-        "-Wextra",
-        "-DES_SIM_BUILD",
-        "-I",
-        str(ROOT / "host_stubs"),
-        "-shared",
-        "-I",
-        str(ROOT),
-        "-I",
-        str(config.project_include),
-    ]
-    if platform.system() != "Windows":
-        cmd.append("-fPIC")
-    cmd += [str(src) for src in sources]
-    cmd += ["-o", str(out)]
-    if platform.system() != "Windows":
-        cmd.append("-lm")
+    if compiler_kind == "msvc":
+        cmd = [
+            compiler,
+            "/nologo",
+            "/TC",
+            "/O2",
+            "/W3",
+            "/LD",
+            "/DES_SIM_BUILD",
+            f"/I{str(ROOT / 'host_stubs')}",
+            f"/I{str(ROOT)}",
+            f"/I{str(config.project_include)}",
+        ]
+        if is_hsm_project:
+            cmd.append("/DES_SIM_HSM")
+        cmd += [str(src) for src in sources]
+        cmd += ["/link", f"/OUT:{str(out)}"]
+    else:
+        cmd = [
+            compiler,
+            "-std=c99",
+            "-O2",
+            "-Wall",
+            "-Wextra",
+            "-DES_SIM_BUILD",
+            "-I",
+            str(ROOT / "host_stubs"),
+            "-shared",
+            "-I",
+            str(ROOT),
+            "-I",
+            str(config.project_include),
+        ]
+        if is_hsm_project:
+            cmd.append("-DES_SIM_HSM")
+        if platform.system() != "Windows":
+            cmd.append("-fPIC")
+        cmd += [str(src) for src in sources]
+        cmd += ["-o", str(out)]
+        if platform.system() != "Windows":
+            cmd.append("-lm")
 
     print("Building:", " ".join(cmd))
     subprocess.check_call(cmd, cwd=ROOT)

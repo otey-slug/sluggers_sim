@@ -1,0 +1,149 @@
+{
+  "name": "SluggersBot",
+  "shape": {
+    "type": "rect",
+    "rectw": 11.0,
+    "recth": 11.0,
+    "circler": 5.5,
+    "hexbasew": 11.0,
+    "hexmidw": 16.6,
+    "hextopw": 8.0,
+    "hexmidh": 0.1,
+    "hexhalfh": 5.5,
+    "pentbasew": 11.0,
+    "pentshoulderw": 17.8,
+    "pentshoulderh": 2.89,
+    "penthalfh": 9.36,
+    "rotation_deg": 0.0,
+    "forward_deg": 0.0
+  },
+  "motion": {
+    "speed": 90.0,
+    "turn_speed": 2.5,
+    "omni": true
+  },
+  "wheels": [
+    {
+      "name": "FL",
+      "pos_x": 3.5,
+      "pos_y": 4.16,
+      "width_in": 0.75,
+      "radius_in": 1.5,
+      "height_in": 1.5,
+      "angle_deg": 90.0,
+      "color": "#89b4fa"
+    },
+    {
+      "name": "FR",
+      "pos_x": 3.5,
+      "pos_y": -4.15,
+      "width_in": 0.75,
+      "radius_in": 1.5,
+      "height_in": 1.5,
+      "angle_deg": 90.0,
+      "color": "#89b4fa"
+    },
+    {
+      "name": "RL",
+      "pos_x": -3.5,
+      "pos_y": 4.15,
+      "width_in": 0.75,
+      "radius_in": 1.5,
+      "height_in": 1.5,
+      "angle_deg": 90.0,
+      "color": "#89b4fa"
+    },
+    {
+      "name": "RR",
+      "pos_x": -3.5,
+      "pos_y": -4.15,
+      "width_in": 0.75,
+      "radius_in": 1.5,
+      "height_in": 1.5,
+      "angle_deg": 90.0,
+      "color": "#89b4fa"
+    }
+  ],
+  "sensors": [
+    {
+      "name": "fl_out",
+      "type": "tape",
+      "pos_x": 4.35,
+      "pos_y": 3.0,
+      "angle_deg": 0,
+      "color": "#FF6400",
+      "pin": "Unassigned",
+      "auto_pin": true
+    },
+    {
+      "name": "fl_in",
+      "type": "tape",
+      "pos_x": 2.6,
+      "pos_y": 1.25,
+      "angle_deg": 0,
+      "color": "#FF6400",
+      "pin": "Unassigned",
+      "auto_pin": true
+    },
+    {
+      "name": "fr_in",
+      "type": "tape",
+      "pos_x": 2.6,
+      "pos_y": -1.25,
+      "angle_deg": 0,
+      "color": "#FF6400",
+      "pin": "Unassigned",
+      "auto_pin": true
+    },
+    {
+      "name": "fr_out",
+      "type": "tape",
+      "pos_x": 4.35,
+      "pos_y": -3.0,
+      "angle_deg": 0,
+      "color": "#FF6400",
+      "pin": "Unassigned",
+      "auto_pin": true
+    },
+    {
+      "name": "rl_out",
+      "type": "tape",
+      "pos_x": -4.35,
+      "pos_y": 3.0,
+      "angle_deg": 0,
+      "color": "#FF6400",
+      "pin": "Unassigned",
+      "auto_pin": true
+    },
+    {
+      "name": "rr_out",
+      "type": "tape",
+      "pos_x": -4.35,
+      "pos_y": -3.0,
+      "angle_deg": 0,
+      "color": "#FF6400",
+      "pin": "Unassigned",
+      "auto_pin": true
+    },
+    {
+      "name": "rl_in",
+      "type": "tape",
+      "pos_x": -2.6,
+      "pos_y": 1.25,
+      "angle_deg": 0,
+      "color": "#FF6400",
+      "pin": "Unassigned",
+      "auto_pin": true
+    },
+    {
+      "name": "rr_in",
+      "type": "tape",
+      "pos_x": -2.6,
+      "pos_y": -1.25,
+      "angle_deg": 0,
+      "color": "#FF6400",
+      "pin": "Unassigned",
+      "auto_pin": true
+    }
+  ]
+}

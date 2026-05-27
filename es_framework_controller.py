@@ -5,7 +5,7 @@ Run:
     python sluggers_sim.py --controller es_framework_controller.py
 
 Build first if needed:
-    python es_sim_adapter/build_es_adapter.py --project-root ece118_finalproject
+    python es_sim_adapter/build_es_adapter.py --project-root ECE118FinalProject
 
 Optional controller configuration is read from:
     ES_SIM_PROJECT_ROOT, ES_SIM_PROJECT_SRC, ES_SIM_PROJECT_INCLUDE, ES_SIM_HEX
